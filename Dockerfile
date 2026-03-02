@@ -1,6 +1,8 @@
-FROM coturn/coturn:latest
+FROM debian:bookworm-slim
 
-USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    coturn \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
