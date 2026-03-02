@@ -1,0 +1,16 @@
+# render.yaml — drop this in your coturn repo root
+# Render will auto-detect it and configure the service
+
+services:
+  - type: web
+    name: devspace-turn
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: TURN_USER
+        value: devspace          # change this to something private
+      - key: TURN_PASS
+        value: devspace123       # change this to something private
+      - key: TURN_REALM
+        value: devspace.turn
