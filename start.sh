@@ -17,4 +17,8 @@ exec turnserver \
   --user="$TURN_USER:$TURN_PASS" \
   --no-multicast-peers \
   --fingerprint \
-  --log-file=stdout
+  --log-file=stdout \
+  --no-cli \
+  --denied-peer-ip=10.0.0.0-10.255.255.255 \
+  --denied-peer-ip=192.168.0.0-192.168.255.255 \
+  --denied-peer-ip=172.16.0.0-172.31.255.255
