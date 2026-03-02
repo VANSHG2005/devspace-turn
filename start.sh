@@ -1,11 +1,11 @@
 #!/bin/sh
 REALM=${TURN_REALM:-devspace.turn}
-USER=${TURN_USER:-devspace}
-PASS=${TURN_PASS:-devspace123}
+TURN_USER=${TURN_USER:-devspace}
+TURN_PASS=${TURN_PASS:-devspace123}
 
 echo "Starting CoTURN..."
 echo "  Realm: $REALM"
-echo "  User:  $USER"
+echo "  User:  $TURN_USER"
 echo "  Port:  3478"
 
 exec turnserver \
@@ -14,12 +14,9 @@ exec turnserver \
   --realm="$REALM" \
   --server-name="$REALM" \
   --lt-cred-mech \
-  --user="$USER:$PASS" \
+  --user="$TURN_USER:$TURN_PASS" \
   --no-multicast-peers \
   --no-loopback-peers \
-  --log-file=stdout \
-  --simple-log \
   --fingerprint \
-  --denied-peer-ip=10.0.0.0-10.255.255.255 \
-  --denied-peer-ip=192.168.0.0-192.168.255.255 \
-  --denied-peer-ip=172.16.0.0-172.31.255.255
+  --log-file=stdout \
+  --no-stdout-log=0
