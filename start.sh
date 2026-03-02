@@ -17,5 +17,4 @@ exec turnserver \
   --user="$TURN_USER:$TURN_PASS" \
   --no-multicast-peers \
   --fingerprint \
-  --log-file=stdout \
-  --no-stdout-log=0
+  --log-file=stdout
