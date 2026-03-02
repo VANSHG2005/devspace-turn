@@ -16,7 +16,6 @@ exec turnserver \
   --lt-cred-mech \
   --user="$TURN_USER:$TURN_PASS" \
   --no-multicast-peers \
-  --no-loopback-peers \
   --fingerprint \
   --log-file=stdout \
   --no-stdout-log=0
