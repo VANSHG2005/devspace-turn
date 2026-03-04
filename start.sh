@@ -5,33 +5,29 @@ TURN_PASS=${TURN_PASS:-devspace123}
 PORT=${PORT:-10000}
 
 echo "Starting CoTURN..."
-echo "  Realm: $REALM  User: $TURN_USER  TURN Port: 3478  Health: $PORT"
+echo "  Realm: $REALM  User: $TURN_USER  Health port: $PORT"
 
-PUBLIC_IP=$(curl -s --max-time 5 https://api.ipify.org || curl -s --max-time 5 https://ifconfig.me || echo "")
+# get public IP
+PUBLIC_IP=$(curl -s --max-time 5 https://api.ipify.org)
+if [ -z "$PUBLIC_IP" ]; then
+  PUBLIC_IP=$(curl -s --max-time 5 https://ifconfig.me)
+fi
+
 PRIVATE_IP=$(hostname -i 2>/dev/null | awk '{print $1}')
 echo "  Public IP: $PUBLIC_IP  Private IP: $PRIVATE_IP"
 
-if [ -n "$PUBLIC_IP" ]; then
+if [ -n "$PUBLIC_IP" ] && [ -n "$PRIVATE_IP" ]; then
   EXTERNAL_IP_FLAG="--external-ip=$PUBLIC_IP/$PRIVATE_IP"
+  echo "  NAT traversal: enabled"
 else
   EXTERNAL_IP_FLAG=""
+  echo "  WARNING: Could not detect public IP — relay may not work"
 fi
 
-# Robust HTTP health server using Python (more reliable than nc loop)
-python3 -c "
-import http.server, os
-class H(http.server.BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b'OK')
-    def do_HEAD(self):
-        self.send_response(200)
-        self.end_headers()
-    def log_message(self, *a): pass
-port = int(os.environ.get('PORT', 10000))
-http.server.HTTPServer(('0.0.0.0', port), H).serve_forever()
-" &
+# health server using netcat in a loop (no python needed)
+while true; do
+  echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nOK" | nc -l -p "$PORT" -q 1
+done &
 
 exec turnserver \
   --listening-port=3478 \
