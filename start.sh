@@ -7,27 +7,24 @@ PORT=${PORT:-10000}
 echo "Starting CoTURN..."
 echo "  Realm: $REALM  User: $TURN_USER  Health port: $PORT"
 
-# get public IP
 PUBLIC_IP=$(curl -s --max-time 5 https://api.ipify.org)
 if [ -z "$PUBLIC_IP" ]; then
   PUBLIC_IP=$(curl -s --max-time 5 https://ifconfig.me)
 fi
-
 PRIVATE_IP=$(hostname -i 2>/dev/null | awk '{print $1}')
 echo "  Public IP: $PUBLIC_IP  Private IP: $PRIVATE_IP"
 
 if [ -n "$PUBLIC_IP" ] && [ -n "$PRIVATE_IP" ]; then
   EXTERNAL_IP_FLAG="--external-ip=$PUBLIC_IP/$PRIVATE_IP"
-  echo "  NAT traversal: enabled"
 else
   EXTERNAL_IP_FLAG=""
-  echo "  WARNING: Could not detect public IP — relay may not work"
+  echo "  WARNING: no public IP detected"
 fi
 
-# health server using netcat in a loop (no python needed)
-while true; do
-  echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nOK" | nc -l -p "$PORT" -q 1
-done &
+# socat-based HTTP server — persistent, handles concurrent requests, no python needed
+socat TCP-LISTEN:$PORT,fork,reuseaddr EXEC:'printf "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nOK"' &
+
+echo "  Health server listening on :$PORT"
 
 exec turnserver \
   --listening-port=3478 \
