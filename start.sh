@@ -21,8 +21,9 @@ else
   echo "  WARNING: no public IP detected"
 fi
 
-# socat-based HTTP server — persistent, handles concurrent requests, no python needed
-socat TCP-LISTEN:$PORT,fork,reuseaddr EXEC:'printf "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nOK"' &
+# use a shell script for the socat response so printf escapes work correctly
+RESPONSE="HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nOK"
+socat TCP-LISTEN:$PORT,fork,reuseaddr SYSTEM:"echo -e '$RESPONSE'" &
 
 echo "  Health server listening on :$PORT"
 
