@@ -7,25 +7,31 @@ PORT=${PORT:-10000}
 echo "Starting CoTURN..."
 echo "  Realm: $REALM  User: $TURN_USER  TURN Port: 3478  Health: $PORT"
 
-# Fetch our public IP (Render is behind NAT — CoTURN MUST know public IP to relay correctly)
 PUBLIC_IP=$(curl -s --max-time 5 https://api.ipify.org || curl -s --max-time 5 https://ifconfig.me || echo "")
 PRIVATE_IP=$(hostname -i 2>/dev/null | awk '{print $1}')
+echo "  Public IP: $PUBLIC_IP  Private IP: $PRIVATE_IP"
 
-echo "  Public IP:  $PUBLIC_IP"
-echo "  Private IP: $PRIVATE_IP"
-
-if [ -z "$PUBLIC_IP" ]; then
-  echo "  WARNING: Could not detect public IP — relay may not work through NAT"
-  EXTERNAL_IP_FLAG=""
-else
-  # Format: --external-ip PUBLIC/PRIVATE tells CoTURN to advertise public but bind to private
+if [ -n "$PUBLIC_IP" ]; then
   EXTERNAL_IP_FLAG="--external-ip=$PUBLIC_IP/$PRIVATE_IP"
+else
+  EXTERNAL_IP_FLAG=""
 fi
 
-# Tiny HTTP health server so Render doesn't time out
-while true; do
-  echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" | nc -l -p "$PORT" -q 1 2>/dev/null || true
-done &
+# Robust HTTP health server using Python (more reliable than nc loop)
+python3 -c "
+import http.server, os
+class H(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b'OK')
+    def do_HEAD(self):
+        self.send_response(200)
+        self.end_headers()
+    def log_message(self, *a): pass
+port = int(os.environ.get('PORT', 10000))
+http.server.HTTPServer(('0.0.0.0', port), H).serve_forever()
+" &
 
 exec turnserver \
   --listening-port=3478 \
